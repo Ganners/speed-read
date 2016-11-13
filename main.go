@@ -5,7 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -45,7 +44,7 @@ func main() {
 	// Take input from the terminal
 	input, err := getInput()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fatal(err)
 	}
 
 	// Parses flags etc.
