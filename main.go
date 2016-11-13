@@ -44,7 +44,8 @@ func main() {
 	// Take input from the terminal
 	input, err := getInput()
 	if err != nil {
-		fmt.Fatal(err)
+		fmt.Println(err)
+		os.Exit(0)
 	}
 
 	// Parses flags etc.
