@@ -108,7 +108,8 @@ func main() {
 		col := middleCol - (len(word) / 2)
 		fmt.Print(clear +
 			fmt.Sprintf(positionCursor, middleRow, col) +
-			word)
+			word +
+			fmt.Sprintf(positionCursor, rows, cols))
 
 		wordsIndex++
 
