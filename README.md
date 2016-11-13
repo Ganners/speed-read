@@ -16,3 +16,12 @@ cat $DEMO_BOOK | speed-read -wpm=600 -lines=$(tput lines) -cols=$(tput cols)
 
 For some free plain-text books, check out http://www.gutenberg.org/. An example
 from there is included in the repository.
+
+To do:
+------
+
+ + [ ] Allow setting a start word index
+ + [ ] When the program is aborted, print the command to resume from the
+       starting index
+ + [ ] Add a countdown before the program starts
+ + [ ] Add more of a pause after a full stop
