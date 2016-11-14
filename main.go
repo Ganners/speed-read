@@ -6,7 +6,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
+	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -26,6 +29,9 @@ const (
 
 	helpWordsPerMinute = "words per minute, recommend somewhere from 300 - 700"
 	helpLoopCount      = "number of times to loop, 0 for infinite"
+
+	helpStartIndex = "to start at a particular word in a book, specify the word's index"
+	onQuitText     = "\nto resume where you finished launch with --start-index=%d"
 
 	// The word length which we consider we can read in a normal time
 	// The average word length is actually 5.1 letters (interesting fact!)
@@ -56,12 +62,25 @@ func main() {
 
 	// Convert to individual words
 	words := strings.Fields(input)
-	wordsLen := uint(len(words))
-	wordsIndex := uint(0)
+	wordsLen := uint64(len(words))
+	wordsIndex := uint64(opts.startIndex)
+
+	// Start a countdown
+	countdown(3, middleRow, middleCol)
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for range c {
+			i := atomic.LoadUint64(&wordsIndex)
+			fmt.Printf(onQuitText, i)
+			os.Exit(0)
+		}
+	}()
 
 	for {
 		// Allows this to repeat forever
-		loop := wordsIndex / wordsLen
+		loop := uint(wordsIndex / wordsLen)
 		wordIndex := wordsIndex % wordsLen
 
 		if opts.loop > 0 && loop >= opts.loop {
@@ -70,26 +89,9 @@ func main() {
 
 		word := words[wordIndex]
 		wordLen := uint(len(word))
-		col := middleCol - (wordLen / 2)
 
-		// Construct and print the frame
-		frame := bytes.NewBuffer(make([]byte, 256))
-		{
-			// Clear the terminal
-			frame.WriteString(clear)
-
-			// Position the cursor
-			frame.WriteString(fmt.Sprintf(positionCursor, middleRow, col))
-
-			// Print the word
-			frame.WriteString(word)
-
-			// Position the cursor 'out of sight'
-			frame.WriteString(fmt.Sprintf(positionCursor, opts.lines, opts.cols))
-
-			// Print the frame
-			fmt.Print(frame.String())
-		}
+		// Print out the word
+		printCenter(word, middleRow, middleCol)
 
 		wordsIndex++
 
@@ -111,12 +113,47 @@ func main() {
 	}
 }
 
+// Counts down from n to 0
+func countdown(from, lines, cols uint) {
+	for i := from; i > 0; i-- {
+		printCenter(strconv.Itoa(int(i)), lines, cols)
+		time.Sleep(time.Second)
+	}
+}
+
+// Prints a string at the lines/cols, these should be the coordinates of the
+// center
+func printCenter(word string, line, col uint) {
+
+	halfWordLen := uint(len(word) / 2)
+
+	// Construct and print the frame
+	frame := bytes.NewBuffer(make([]byte, 256))
+	{
+		// Clear the terminal
+		frame.WriteString(clear)
+
+		// Position the cursor
+		frame.WriteString(fmt.Sprintf(positionCursor, line, col-halfWordLen))
+
+		// Print the word
+		frame.WriteString(word)
+
+		// Position the cursor 'out of sight'
+		frame.WriteString(fmt.Sprintf(positionCursor, 0, 0))
+
+		// Print the frame
+		fmt.Print(frame.String())
+	}
+}
+
 // The user options
 type options struct {
-	lines uint
-	cols  uint
-	wpm   uint
-	loop  uint
+	lines      uint
+	cols       uint
+	wpm        uint
+	loop       uint
+	startIndex uint
 }
 
 // Retrieves user input from flags
@@ -126,6 +163,7 @@ func getOptions() *options {
 	flag.UintVar(&opts.cols, "cols", defaultCols, helpCols)
 	flag.UintVar(&opts.wpm, "wpm", defaultWordsPerMinute, helpWordsPerMinute)
 	flag.UintVar(&opts.loop, "loop", defaultLoopCount, helpLoopCount)
+	flag.UintVar(&opts.startIndex, "start-index", 0, helpStartIndex)
 
 	flag.Parse()
 
