@@ -72,8 +72,7 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for range c {
-			i := atomic.LoadUint64(&wordsIndex)
-			fmt.Printf(onQuitText, i)
+			fmt.Printf(onQuitText, atomic.LoadUint64(&wordsIndex)-1)
 			os.Exit(0)
 		}
 	}()
@@ -89,11 +88,12 @@ func main() {
 
 		word := words[wordIndex]
 		wordLen := uint(len(word))
+		position := fmt.Sprintf("%d/%d", atomic.LoadUint64(&wordsIndex), wordsLen)
 
 		// Print out the word
-		printCenter(word, middleRow, middleCol)
+		printFrame(middleRow, middleCol, word, position)
 
-		wordsIndex++
+		atomic.AddUint64(&wordsIndex, 1)
 
 		// The sleep time will in general be the speed specified by the user.
 		// However, it will be scaled up for words that are longer than the
@@ -116,16 +116,16 @@ func main() {
 // Counts down from n to 0
 func countdown(from, lines, cols uint) {
 	for i := from; i > 0; i-- {
-		printCenter(strconv.Itoa(int(i)), lines, cols)
+		printFrame(lines, cols, strconv.Itoa(int(i)), "")
 		time.Sleep(time.Second)
 	}
 }
 
 // Prints a string at the lines/cols, these should be the coordinates of the
 // center
-func printCenter(word string, line, col uint) {
+func printFrame(line, col uint, center, topLeft string) {
 
-	halfWordLen := uint(len(word) / 2)
+	halfWordLen := uint(len(center) / 2)
 
 	// Construct and print the frame
 	frame := bytes.NewBuffer(make([]byte, 256))
@@ -136,11 +136,14 @@ func printCenter(word string, line, col uint) {
 		// Position the cursor
 		frame.WriteString(fmt.Sprintf(positionCursor, line, col-halfWordLen))
 
-		// Print the word
-		frame.WriteString(word)
+		// Print the center
+		frame.WriteString(center)
 
 		// Position the cursor 'out of sight'
 		frame.WriteString(fmt.Sprintf(positionCursor, 0, 0))
+
+		// Print the center
+		frame.WriteString(topLeft)
 
 		// Print the frame
 		fmt.Print(frame.String())
