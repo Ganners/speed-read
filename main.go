@@ -34,6 +34,7 @@ const (
 	// For each letter over the average, what should the percentage increase in
 	// pause be
 	percentageIncreasePerLetter = 20
+	percentageIncreasePause     = 50
 
 	// Escape sequences to clear the terminal and position the cursor
 	clear          = "\033[2J"
@@ -100,6 +101,12 @@ func main() {
 			increase := 100 + ((wordLen - averageWordLength) * percentageIncreasePerLetter)
 			sleepTime = (sleepTime / 100) * time.Duration(increase)
 		}
+
+		// If there should be a pause
+		if shouldPause(word) {
+			sleepTime = (sleepTime / 100) * (100 + time.Duration(percentageIncreasePause))
+		}
+
 		time.Sleep(sleepTime)
 	}
 }
@@ -145,4 +152,13 @@ func getInput() (string, error) {
 	}
 
 	return string(b[:n]), nil
+}
+
+// For a given word, works out if there should be an additional pause
+func shouldPause(word string) bool {
+	switch word[len(word)-1] {
+	case '.', ',', ':':
+		return true
+	}
+	return false
 }

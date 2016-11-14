@@ -24,4 +24,3 @@ To do:
  + [ ] When the program is aborted, print the command to resume from the
        starting index
  + [ ] Add a countdown before the program starts
- + [ ] Add more of a pause after a full stop
